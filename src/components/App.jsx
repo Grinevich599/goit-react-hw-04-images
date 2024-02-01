@@ -68,30 +68,34 @@ export class App extends Component {
     this.setState({ isModalOpen: false });
   };
 
-  render() {
-    const { isLoading, gallery, isModalOpen, modalData } = this.state;
-    return (
-      <>
-        <Searchbar onSubmit={this.handleSubmit} />
+render() {
+  const { isLoading, gallery, isModalOpen, modalData } = this.state;
+  const canLoadMore = !isLoading && gallery.length >= 12;
 
-        <ImageGallery
-          searchResult={gallery}
-          handleOpenModal={this.handleOpenModal}
+  return (
+    <>
+      <Searchbar onSubmit={this.handleSubmit} />
+
+      <ImageGallery
+        searchResult={gallery}
+        handleOpenModal={this.handleOpenModal}
+      />
+
+      {isLoading && <Loader />}
+
+      {canLoadMore && gallery.length % 12 === 0 && (
+        <Button onClick={this.handleLoadMore} title="Load more" />
+      )}
+
+      {isModalOpen && (
+        <Modal
+          modalData={modalData}
+          handleCloseModal={this.handleCloseModal}
         />
-
-        {isLoading && <Loader />}
-
-        {!isLoading && gallery.length >= 12 && (
-          <Button onClick={this.handleLoadMore} title="Load more" />
-        )}
-
-        {isModalOpen && (
-          <Modal
-            modalData={modalData}
-            handleCloseModal={this.handleCloseModal}
-          />
-        )}
-      </>
-    );
-  }
+      )}
+    </>
+  );
 }
+
+
+}  
