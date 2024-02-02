@@ -1,100 +1,145 @@
-import React, { Component } from 'react';
-import { Searchbar } from './Searchbar/Searchbar';
-import { ImageGallery } from './ImageGallery/ImageGallery';
-import { Loader } from './Loader/Loader';
-import { fetchImagesWithQuery } from 'api/api';
-import { Button } from './Button/Button';
-import { Modal } from './Modal/Modal';
-import { Report } from 'notiflix/build/notiflix-report-aio';
+// import React, { Component } from 'react';
+import { requestImages } from '../api.js';
+import { Searchbar } from './Searchbar';
+import ImageGallery from './ImageGallery';
+import { Button } from './Button.jsx';
+import { Loader } from './Loader.jsx';
+import Modal from './Modal.jsx';
+import { useState } from 'react';
+import { useEffect } from 'react';
 
-export class App extends Component {
-  state = {
-    searchQuery: '',
-    page: 1,
-    gallery: [],
-    error: null,
-    isLoading: false,
-    isModalOpen: false,
-    modalData: null,
-  };
+const App = () => {
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [totalPages, setTotalPages] = useState(null);
+  const [modalData, setModalData] = useState({});
+  const [isLoadMore, setIsLoadMore] = useState(false);
+  const [isOpenModal, setIsOpenModal] = useState(false);
 
-  async componentDidUpdate(_, prevState) {
-    const { searchQuery, page } = this.state;
+  useEffect(() => {
+    fetchImages(query, page);
+  }, [query, page]);
 
-    if (searchQuery !== prevState.searchQuery || page !== prevState.page) {
-      this.setState({ isLoading: true, error: null });
-      try {
-        const gallery = await fetchImagesWithQuery(searchQuery, page);
-        if (gallery.length === 0) {
-          Report.info(
-            'Ooops!',
-            'No results found for your search query.',
-            'Okay'
-          );
-          return;
-        }
-        this.setState(prevState => ({
-          gallery: [...prevState.gallery, ...gallery],
-        }));
-      } catch (error) {
-        this.setState({ error: error.message });
-        Report.failure('Error', `${error.message}`, 'Okay');
-      } finally {
-        this.setState({ isLoading: false });
+  // fetchImages = async (query, page) => {
+  //   try {
+  //     if (!this.state.query.trim()) {
+  //       return;
+  //     }
+
+  //     this.setState({ isLoadMore: true });
+  //     const { hits, totalHits } = await requestImages(query, page);
+
+  //     if (hits.length === 0) {
+  //       return alert('We did not find');
+  //     }
+  //     this.setState(prevState => ({
+  //       images: [...prevState.images, ...hits],
+  //       totalPages: page < Math.ceil(totalHits / 12),
+  //       status: 'success',
+
+  //     }));
+  //   } catch (error) {
+  //     console.error('Error fetching images:', error);
+  //     this.setState({
+  //       status: 'error',
+  //       error: error.message,
+
+  //     });
+  //   } finally {
+  //     this.setState({ isLoadMore: false });
+  //   }
+  // };
+
+  // handleSubmit = query => {
+  //   if (query === query) {
+  //     return;
+  //   }
+  //   this.setState({ query: query, images: [], page: 1 });
+
+  // };
+
+  const fetchImages = async (query, page) => {
+    try {
+      if (!query.trim()) {
+        return;
       }
+
+      setIsLoadMore(true);
+
+      const { hits, totalHits } = await requestImages(query, page);
+
+      if (hits.length === 0) {
+        return alert('We did not find');
+      }
+
+      setImages(prevImages => [...prevImages, ...hits]);
+      setTotalPages(page < Math.ceil(totalHits / 12));
+    } catch (error) {
+      console.error('Error fetching images:', error);
+    } finally {
+      setIsLoadMore(false);
     }
-  }
-
-  handleSubmit = searchQuery => {
-    this.setState({
-      searchQuery,
-      page: 1,
-      gallery: [],
-    });
   };
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const handleSubmit = newQuery => {
+    if (newQuery === query) {
+      return;
+    }
+    setQuery(newQuery);
+    setImages([]);
+    setPage(1);
   };
 
-  handleOpenModal = selectedImage => {
-    this.setState({
-      isModalOpen: true,
-      modalData: selectedImage,
-    });
+  //  const handleLoadMore = () => {
+  //   this.setState(prevState => ({
+  //     page: prevState.page + 1,
+  //   }));
+
+  // };
+  const handleLoadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  handleCloseModal = () => {
-    this.setState({ isModalOpen: false });
+  // handleOpenModal = (largeImageURL, tags) => {
+  //   this.setState({
+  //     modalData: { largeImageURL, tags },
+  //     isOpenModal: true,
+  //   });
+  // };
+
+  const handleOpenModal = (largeImageURL, tags) => {
+    setModalData({ largeImageURL, tags });
+    setIsOpenModal(true);
   };
 
-render() {
-  const { isLoading, gallery, isModalOpen, modalData } = this.state;
-  const canLoadMore = !isLoading && gallery.length >= 12;
+  // handleCloseModal = () => {
+  //   this.setState({
+  //     isOpenModal: false,
+  //   });
+  // };
+
+  const handleCloseModal = () => {
+    setIsOpenModal(false);
+  };
 
   return (
-    <>
-      <Searchbar onSubmit={this.handleSubmit} />
-
-      <ImageGallery
-        searchResult={gallery}
-        handleOpenModal={this.handleOpenModal}
-      />
-
-      {isLoading && <Loader />}
-
-      {canLoadMore && gallery.length % 12 === 0 && (
-        <Button onClick={this.handleLoadMore} title="Load more" />
-      )}
-
-      {isModalOpen && (
+    <div>
+      <Searchbar onSubmit={handleSubmit} />
+      {isLoadMore && <Loader />}
+      <ImageGallery images={images} onClickModal={handleOpenModal} />
+      {isOpenModal && (
         <Modal
+          isOpenModal={isOpenModal}
+          onCloseModal={handleCloseModal}
           modalData={modalData}
-          handleCloseModal={this.handleCloseModal}
         />
       )}
-    </>
+      {totalPages && !isLoadMore && images.length > 0 && (
+        <Button handleLoadMore={handleLoadMore} />
+      )}
+    </div>
   );
-}
+};
 
-}  
+export default App;
