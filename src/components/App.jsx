@@ -18,69 +18,34 @@ const App = () => {
   const [isOpenModal, setIsOpenModal] = useState(false);
 
   useEffect(() => {
+    const fetchImages = async (query, page) => {
+      try {
+        if (!query.trim()) {
+          return;
+        }
+  
+        setIsLoadMore(true);
+  
+        const { hits, totalHits } = await requestImages(query, page);
+  
+        if (hits.length === 0) {
+          return alert('We did not find');
+        }
+  
+        setImages(prevImages => [...prevImages, ...hits]);
+        setTotalPages(page < Math.ceil(totalHits / 12));
+      } catch (error) {
+        console.error('Error fetching images:', error);
+      } finally {
+        setIsLoadMore(false);
+      }
+    };
     fetchImages(query, page);
   }, [query, page]);
 
-  // fetchImages = async (query, page) => {
-  //   try {
-  //     if (!this.state.query.trim()) {
-  //       return;
-  //     }
+  
 
-  //     this.setState({ isLoadMore: true });
-  //     const { hits, totalHits } = await requestImages(query, page);
 
-  //     if (hits.length === 0) {
-  //       return alert('We did not find');
-  //     }
-  //     this.setState(prevState => ({
-  //       images: [...prevState.images, ...hits],
-  //       totalPages: page < Math.ceil(totalHits / 12),
-  //       status: 'success',
-
-  //     }));
-  //   } catch (error) {
-  //     console.error('Error fetching images:', error);
-  //     this.setState({
-  //       status: 'error',
-  //       error: error.message,
-
-  //     });
-  //   } finally {
-  //     this.setState({ isLoadMore: false });
-  //   }
-  // };
-
-  // handleSubmit = query => {
-  //   if (query === query) {
-  //     return;
-  //   }
-  //   this.setState({ query: query, images: [], page: 1 });
-
-  // };
-
-  const fetchImages = async (query, page) => {
-    try {
-      if (!query.trim()) {
-        return;
-      }
-
-      setIsLoadMore(true);
-
-      const { hits, totalHits } = await requestImages(query, page);
-
-      if (hits.length === 0) {
-        return alert('We did not find');
-      }
-
-      setImages(prevImages => [...prevImages, ...hits]);
-      setTotalPages(page < Math.ceil(totalHits / 12));
-    } catch (error) {
-      console.error('Error fetching images:', error);
-    } finally {
-      setIsLoadMore(false);
-    }
-  };
 
   const handleSubmit = newQuery => {
     if (newQuery === query) {
@@ -91,33 +56,17 @@ const App = () => {
     setPage(1);
   };
 
-  //  const handleLoadMore = () => {
-  //   this.setState(prevState => ({
-  //     page: prevState.page + 1,
-  //   }));
 
-  // };
   const handleLoadMore = () => {
     setPage(prevPage => prevPage + 1);
   };
 
-  // handleOpenModal = (largeImageURL, tags) => {
-  //   this.setState({
-  //     modalData: { largeImageURL, tags },
-  //     isOpenModal: true,
-  //   });
-  // };
 
   const handleOpenModal = (largeImageURL, tags) => {
     setModalData({ largeImageURL, tags });
     setIsOpenModal(true);
   };
 
-  // handleCloseModal = () => {
-  //   this.setState({
-  //     isOpenModal: false,
-  //   });
-  // };
 
   const handleCloseModal = () => {
     setIsOpenModal(false);
